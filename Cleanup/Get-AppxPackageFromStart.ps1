@@ -1,4 +1,4 @@
-﻿Function Get-AppxPackageFromStart {
+﻿Function Global:Get-AppxPackageFromStart {
 <#
         .SYNOPSIS
             Returns the AppX package that correlates to the application display name on the Start menu.
@@ -17,40 +17,41 @@
              
         .NOTES
  	        NAME: Get-AppxPackageFromStart.ps1
-	        VERSION: 1.0
+	        VERSION: 1.1
 	        AUTHOR: Aaron Parker
-	        LASTEDIT: March 15, 2016
+	        LASTEDIT: March 29, 2016
  
         .LINK
             http://stealthpuppy.com
     #>
     [CmdletBinding(SupportsShouldProcess = $False, ConfirmImpact = "None", DefaultParameterSetName = "Name")]
     PARAM (
-        [Parameter(Mandatory=$true, Position=1, HelpMessage="Specify a Start menu shortcut name.")]
+        [Parameter(Mandatory=$true, Position=1, ValueFromPipeline=$True, HelpMessage="Specify a Start menu shortcut name.")]
         [string[]]$Name
     )
     
     BEGIN {
-        
-        #Return an object for the selected shortcut name
-        $StartPkg = Get-StartApps -Name $Name        
+
+        $Packages = @()        
     }
     
     PROCESS {
         
-        If ( -not ($StartPkg -eq $Null )) {
-        
-            # Return an AppX package object by comparing the Start menu package AppId to the PackageFamilyName up to the ! character     
-            $Package = Get-AppxPackage | Where-Object { ($StartPkg.AppId -split "!")[0] -contains $_.PackageFamilyName }        
-        } Else {
-            
-            # Package was not found (which should only happen if shortcut is not an AppX app or wrong shortcut specified)
-            $Package = $False
-        }
+        ForEach ( $Pkg in $Name ) {
+
+            $StartPkg = Get-StartApps -Name $Pkg
+
+            # If package is not Null and AppID contains !, assume that it is an AppX package
+            If ( ( -not ($StartPkg -eq $Null )) -and $StartPkg.AppID.Contains("!") ) {
+                
+                # Return an AppX package object by comparing the Start menu package AppId to the PackageFamilyName up to the ! character     
+                $Packages += Get-AppxPackage | Where-Object { ($StartPkg.AppID -split "!")[0] -contains $_.PackageFamilyName }        
+            }
+        }        
     }
 
     END {
         
-        Return $Package   
+        Return $Packages
     }
 }
