@@ -1,4 +1,4 @@
-﻿Function Global:Get-AppxPackageFromStart {
+﻿Function Get-AppxPackageFromStart {
 <#
         .SYNOPSIS
             Returns the AppX package that correlates to the application display name on the Start menu.
@@ -12,9 +12,9 @@
   
         .EXAMPLE
             PS C:\> Get-AppxPackageFromStart -Name "Twitter"
-            
+
             Returns the AppX package for the shortcut 'Twitter'.
-             
+
         .NOTES
  	        NAME: Get-AppxPackageFromStart.ps1
 	        VERSION: 1.1
@@ -32,26 +32,26 @@
     
     BEGIN {
 
-        $Packages = @()        
+        $Packages = @()
     }
-    
+
     PROCESS {
-        
+
         ForEach ( $Pkg in $Name ) {
 
             $StartPkg = Get-StartApps -Name $Pkg
 
             # If package is not Null and AppID contains !, assume that it is an AppX package
             If ( ( -not ($StartPkg -eq $Null )) -and $StartPkg.AppID.Contains("!") ) {
-                
-                # Return an AppX package object by comparing the Start menu package AppId to the PackageFamilyName up to the ! character     
-                $Packages += Get-AppxPackage | Where-Object { ($StartPkg.AppID -split "!")[0] -contains $_.PackageFamilyName }        
+
+                # Return an AppX package object by comparing the Start menu package AppId to the PackageFamilyName up to the ! character
+                $Packages += Get-AppxPackage | Where-Object { ($StartPkg.AppID -split "!")[0] -contains $_.PackageFamilyName }
             }
-        }        
+        }
     }
 
     END {
-        
+
         Return $Packages
     }
 }
