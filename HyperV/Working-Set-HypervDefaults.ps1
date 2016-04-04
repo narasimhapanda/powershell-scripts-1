@@ -1,5 +1,9 @@
 # Authenticate to the remote host (CredSSP already configured for workgroup machines)
-$cred = Get-Credential -UserName Administrator -Message "Please enter the password."
+$Username = "Administrator"
+$Password = "Passw0rd"
+$SPassword = convertto-securestring -String $Password -AsPlainText -Force
+$cred = new-object -typename System.Management.Automation.PSCredential -argumentlist $Username, $SPassword
+# $cred = Get-Credential -UserName Administrator -Message "Please enter the password."
 $nuc1 = New-CimSession -Credential $cred -ComputerName nuc1
 
 # Get configuration from remote host

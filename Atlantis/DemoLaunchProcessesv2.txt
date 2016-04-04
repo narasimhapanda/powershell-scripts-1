@@ -1,0 +1,157 @@
+﻿# ---------------------------------------------------
+#  App launch script for demoing crazy fast desktops
+#  Last update: Feb 26 2014#  added warning text, modified the string for terminating based on Word; check http 
+# ---------------------------------------------------
+# ------------------------------------------
+# Setup path to Program Files based on processor architecture
+
+If ( $env:PROCESSOR_ARCHITECTURE -eq "x86" ) {
+	$progFilePath = ${env:ProgramFiles} 
+} Else { 
+	$progFilePath = ${env:ProgramFiles(x86)} 
+}
+
+# ---------------------------------------------------
+# Change following values to match environment
+# ---------------------------------------------------
+$officeVersion = "Office14"$adoberdVersion = "Reader 11.0"
+
+## Add the apps with arguments to to launch during the demo to a hashtable
+$appsArray =  @{"$progFilePath\Internet Explorer\iexplore.exe" = "http://www.bbc.com"}
+$appsArray += @{"$progFilePath\Mozilla Firefox\firefox.exe" = "http://www.bbc.com/"}
+$appsArray += @{"$progFilePath\google\chrome\application\chrome.exe" = "http://www.bbc.com/"}
+$appsArray += @{"$progFilePath\Adobe\$adobeRdVersion\Reader\acrord32.exe" = "C:\demo\demo.pdf"}
+$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\powerpnt.exe" = "C:\demo\demo.pptx"}
+$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\mspub.exe" = "C:\demo\demo.pub"}
+$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\excel.exe" = "C:\demo\demo.xlsx"}
+$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\msaccess.exe" = ""}
+#$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\onenote.exe" = ""}
+#$appsArray += @{"C:\Program Files\Microsoft Office 15\root\office15\WINWORD.EXE" = "C:\Stuff\EventDate.docx"}
+
+# Leave Winword as the last application launched - this is check for in timing ---
+$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\winword.exe" = "C:\demo\demo.docx"}
+#-------------------------------------------------------------------------------------------------
+
+
+
+# http://adamstech.wordpress.com/2011/05/12/how-to-properly-pause-a-powershell-script/Function Pause ($Message = "Press any key to continue . . . ") {
+    If ($psISE) {
+        # The "ReadKey" functionality is not supported in Windows PowerShell ISE.
+ 
+        $Shell = New-Object -ComObject "WScript.Shell"        $Button = $Shell.Popup("Click OK to continue.", 0, "Script Paused", 0)        
+        Return
+    }
+ 
+    Write-Host -NoNewline $Message
+ 
+    $Ignore =
+        16,  # Shift (left or right)
+        17,  # Ctrl (left or right)
+        18,  # Alt (left or right)
+        20,  # Caps lock
+        91,  # Windows key (left)
+        92,  # Windows key (right)
+        93,  # Menu key
+        144, # Num lock
+        145, # Scroll lock
+        166, # Back
+        167, # Forward
+        168, # Refresh
+        169, # Stop
+        170, # Search
+        171, # Favorites
+        172, # Start/Home
+        173, # Mute
+        174, # Volume Down
+        175, # Volume Up
+        176, # Next Track
+        177, # Previous Track
+        178, # Stop Media
+        179, # Play
+        180, # Mail
+        181, # Select Media
+        182, # Application 1
+        183  # Application 2
+ 
+    While ($KeyInfo.VirtualKeyCode -Eq $Null -Or $Ignore -Contains $KeyInfo.VirtualKeyCode) {
+        $KeyInfo = $Host.UI.RawUI.ReadKey("NoEcho, IncludeKeyDown")
+    }
+
+    Write-Host
+}
+function GraceFull_Close {
+# Gracefully close apps   Write-Host "Shutting down apps"   $x = Get-Process -ErrorAction SilentlyContinue iexplore | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue excel | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue winword | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue onenote | %{ $_.CloseMainWindow() }   $x =  Get-Process -ErrorAction SilentlyContinue onenotem | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue powerpnt | %{ $_.CloseMainWindow() }   $x =Get-Process -ErrorAction SilentlyContinue msaccess | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue mspub | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue firefox | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue chrome | %{ $_.CloseMainWindow() }   $x = Get-Process -ErrorAction SilentlyContinue acrord32 | %{ $_.CloseMainWindow() }
+}
+
+Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class Tricks {
+     [DllImport("user32.dll")]
+     [return: MarshalAs(UnmanagedType.Bool)]
+     public static extern bool SetForegroundWindow(IntPtr hWnd);
+  }
+"@
+
+# ------------------------------------------# Setup path to Program Files based on processor architecture
+If ( $env:PROCESSOR_ARCHITECTURE -eq "x86" ) { $progFilePath = ${env:ProgramFiles} } Else { $progFilePath = ${env:ProgramFiles(x86)} }
+# Add the apps with arguments to to launch during the demo to a hashtable$appsArray =  @{"$progFilePath\Internet Explorer\iexplore.exe" = "http://www.bbc.com"}#$appsArray += @{"$progFilePath\Adobe\Reader 10.0\Reader\acrord32.exe" = "C:\demo\demo.pdf"}$appsArray += @{"$progFilePath\Adobe\$adobeRdVersion\Reader\acrord32.exe" = "C:\demo\demo.pdf"}$appsArray += @{"$progFilePath\Mozilla Firefox\firefox.exe" = "http://www.bbc.com/"}$appsArray += @{"$progFilePath\google\chrome\application\chrome.exe" = "http://www.bbc.com/"}$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\powerpnt.exe" = "C:\demo\demo.pptx"}$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\mspub.exe" = "C:\demo\demo.pub"}$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\excel.exe" = "C:\demo\demo.xlsx"}$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\msaccess.exe" = ""}#$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\onenote.exe" = ""}$appsArray += @{"$progFilePath\Microsoft Office\$OfficeVersion\winword.exe" = "C:\demo\demo.docx"}#$appsArray += @{"C:\Program Files\Microsoft Office 15\root\office15\WINWORD.EXE" = "C:\Stuff\EventDate.docx"}
+
+# Display some feedback before launching apps
+Write-Host -ForegroundColor DarkYellow "LAUNCH APPS DEMO. About to launch a few apps in quick succession."
+Write-Host -ForegroundColor DarkYellow "Come back to this window to see results."
+Start-Sleep 2
+Write-Host "Launching applications.."
+
+# Save start time$start = Get-Date
+
+# Walk through the hashtabe and launch the apps. Check for existance of EXE and target file before launching$launchDocNotFound = "false"
+$objWinpopup = new-object -comobject wscript.shell
+
+
+ForEach ( $app in $appsArray.Keys ) {
+    If (Test-Path $app ) {
+        If ( $appsArray.Item($app) -eq "" ) {
+           # Start-Process -FilePath $app
+        } ElseIf ( ($appsArray.Item($app).substring(0,4) -eq "http") -or (Test-Path $appsArray.Item($app)) ) {
+            Start-Process -FilePath $app -ArgumentList $appsArray.Item($app)
+        } Else {            $o = $objWinpopup.popup(“Application $app missing reference to document $appsArray.Item($app) launching without it“,0,”Launch Script”,65)            if ($o -eq 2) {
+                GraceFull_Close
+                exit
+            }
+            
+            Write-Host -ForegroundColor magenta "Application $app missing reference to document $appsArray.Item($app).. launching without it"
+            $launchDocNotFound = "true"    
+            Start-Process -FilePath $app        }    }    else {            if ($objWinpopup.popup(“Application $app is missing unable to launch“,0,”Launch Script”,65) -eq 2) {
+         GraceFull_Close
+         exit
+      }    }
+}
+
+# Wait for Word (last launched app) to be ready. Display IO operations while waiting.# If Word and the right window title cannot be found the script will run indefinetely.# Ensure Word is opening a .docx file and the file is not in Compatibility Mode.# IO sampling code from: http://andrewmorgan.ie/2012/11/30/monitoring-storage-disk-queues-and-io-with-powershell/
+$highestTotalIO = 0$highestAppIO = 0$h=(Get-Process -pid $pid).MainWindowHandle
+$TimeOut = 0
+
+Do {
+    [void] [Tricks]::SetForegroundWindow($h)
+
+    # Get IO data operations sample from local machine
+    If (Test-Path variable:ioOperations) { Remove-Variable ioOperations }
+    $ioOperations = (get-counter -counter "\Process(*)\IO Data Operations/sec" -ea 0).countersamples | ? {$_.cookedvalue -gt 0} | select instancename,@{Name="SessionID";Expression={if ($_.path.contains("#")){($_.path.split("#)"))[1]}else{"0"}}},@{Name="IO Data Operations/sec";Expression={[math]::Round($_.cookedvalue,0)}} | sort -Descending "IO Data Operations/sec"    
+    # Write sample to screen
+    Clear
+    Write-Host -ForegroundColor White "Approximate IO/sec"
+    $ioOperations    
+    # Record highest total IO and app with highest IO (0 and 1 entries from IO sample)
+    If ( [int]$ioOperations[0].'IO Data Operations/sec' -gt $highestTotalIO ) { $highestTotalIO = [int]$ioOperations[0].'IO Data Operations/sec' }    If ( [int]$ioOperations[1].'IO Data Operations/sec' -gt $highestAppIO ) { $highestAppIO = [int]$ioOperations[1].'IO Data Operations/sec'; $highestApp = $ioOperations[1].'InstanceName'}
+
+    # Wait until next sample
+    Start-Sleep -Milliseconds 400    
+} Until ( Get-Process -ErrorAction SilentlyContinue winword | Where-Object { $_.MainWindowTitle -like "* - * Word" } )
+
+# Get finish time and display difference to start time
+$end = Get-Date$totalTime = "{0:N2}" -f ($end - $start).TotalSeconds
+Write-HostWrite-Host -ForegroundColor Yellow "Approximate elapsted time until last window was ready: $totalTime seconds."Write-Host -ForegroundColor Yellow "Highest total IO/sec recorded was: $highestTotalIO"write-Host -ForegroundColor Yellow "App with highest IO/sec recorded was: $highestApp at $highestAppIO"Write-Host
+
+# Wait for key press before closing applications[void] [Tricks]::SetForegroundWindow($h)Pause# Gracefully close apps
+GraceFull_Close
