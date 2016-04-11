@@ -26,7 +26,7 @@
             Values of 1 and 2 are accepted.
               
         .EXAMPLE
-            PS C:> New-LabVM -Name APPV1 -CPUs 2 -VHDSize 64
+            PS C:\> New-LabVM -Name APPV1 -CPUs 2 -VHDSize 64
  
         .NOTES
  	        NAME: New-LabVM.ps1
@@ -67,11 +67,11 @@
             If ( $CimSession ) {
 
                 # If a CIM session to the host exists, use that for authentication and connect to host
-                $vVmHost = Get-VMHost -CimSession $CimSession -ErrorAction "Stop"
+                $oVmHost = Get-VMHost -CimSession $CimSession -ErrorAction "Stop"
             } Else {
                 
                 # If no CIM session exists, assume pass-through authentication will work and connect to host
-                $vVmHost = Get-VMHost -ComputerName $VMHost -ErrorAction "Stop"   
+                $oVmHost = Get-VMHost -ComputerName $VMHost -ErrorAction "Stop"   
             }
         }
 
@@ -79,7 +79,7 @@
             Write-Error "Error acessing host $VMHost $($_.Exception.Message)"
         }
                 
-        $VmNetwork = $vVmHost | Select-Object -ExpandProperty ExternalNetworkAdapters
+        # $VmNetwork = $oVmHost | Select-Object -ExpandProperty ExternalNetworkAdapters
         $memoryStartupBytes = 768MB
         $newVHDSizeBytes = 64GB
         $isoPath = "C:\ISOs\LiteTouchPE_x64.iso"
@@ -93,20 +93,22 @@
         $Params = @{
             Name = $Name
             MemoryStartupBytes = $memoryStartupBytes
-            NewVHDSizeBytes = $newVHDSizeBytes
-            NewVHDPath = $vVmHost.VirtualHardDiskPath + "\$Name.vhdx"
-            SwitchName = $vVmHost.ExternalNetworkAdapters[0].SwitchName
+            # NewVHDSizeBytes = $newVHDSizeBytes
+            # NewVHDPath = $oVmHost.VirtualHardDiskPath + "\$Name.vhdx"
+            SwitchName = $oVmHost.ExternalNetworkAdapters[0].SwitchName
             Generation = $Generation
             BootDevice = $bootDevice
         }
 
-        Write-Host @Params
-
         # Create the new virtual machine
         If ( $CimSession ) {
-            $VM = New-VM @Params -CimSession $CimSession -Verbose
+            Write-Host "CIM Session"
+            $VHD = New-VHD -Path ($oVmHost.VirtualHardDiskPath + "\$Name.vhdx") -SizeBytes $newVHDSizeBytes -Dynamic -CimSession $CimSession -Verbose
+            $VM = New-VM @Params -VHDPath ($oVmHost.VirtualHardDiskPath + "\$Name.vhdx") -CimSession $CimSession -Verbose
         } Else {
-            $VM = New-VM @Params -ComputerName $Host -Verbose
+            Write-Host "ComputerName"
+            $VHD = New-VHD -Path ($oVmHost.VirtualHardDiskPath + "\$Name.vhdx") -SizeBytes $newVHDSizeBytes -Dynamic -ComputerName $VmHost -Verbose
+            $VM = New-VM @Params -VHDPath ($oVmHost.VirtualHardDiskPath + "\$Name.vhdx") -ComputerName $VmHost -Verbose
         }
 
         # Set additional VM properties
