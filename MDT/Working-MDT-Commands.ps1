@@ -10,3 +10,8 @@ import-mdttasksequence -path "DS002:\Task Sequences\Vanilla OS" -Name "Windows S
 
 # Remove a folder
 remove-item -path "DS002:\Operating Systems\Volume License\Windows Server 2012" -force -verbose -recurse
+
+# Import a WIM
+Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"
+New-PSDrive -Name "DS001" -PSProvider MDTProvider -Root "\\mcfly\Deployment\Automata"
+import-mdtoperatingsystem -path "DS001:\Operating Systems\Reference Images" -SourceFile "\\mcfly\Deployment\Reference\Captures\WindowsServer2012R2-April2016.wim" -DestinationFolder "WindowsServer2012R2-April2016" -Move -Verbose
