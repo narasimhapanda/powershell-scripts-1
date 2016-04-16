@@ -1,4 +1,4 @@
-﻿Function Remove-VM {
+﻿Function Delete-VM {
     <#
         .SYNOPSIS
             Removes a virtual machine on a Hyper-V host and deletes the associated virtual hard disks.
@@ -31,48 +31,73 @@
  	        NAME: Delete-VM.ps1
 	        VERSION: 1.0
 	        AUTHOR: Aaron Parker
-	        LASTEDIT: April 15, 2016
+	        LASTEDIT: April 16, 2016
  
         .LINK
             http://stealthpuppy.com
     #>
-    [CmdletBinding(SupportsShouldProcess = $False, ConfirmImpact = "High", DefaultParameterSetName = "Default")]
+    [CmdletBinding(SupportsShouldProcess = $False, ConfirmImpact = "High", DefaultParameterSetName = "Auth")]
     PARAM (
-        [Parameter(Mandatory=$False, Position=0, HelpMessage="Specify a host where the target virtual machine exists.")]
-        [array]$ComputerName = $env:COMPUTERNAME,
-
-        [Parameter(Mandatory=$True, Position=1, HelpMessage="Specify a virtual machine to delete.")]
+        [Parameter(Mandatory=$True, HelpMessage="Specify a virtual machine to delete.")]
         [string[]]$VM,
         
-        [Parameter(Mandatory=$False)]
+        [Parameter(ParameterSetName="Auth", Mandatory=$False, HelpMessage="Specify a host where the target virtual machine exists.")]
+        [string]$ComputerName = $env:COMPUTERNAME,
+
+        [Parameter(ParameterSetName="Auth", Mandatory=$False, HelpMessage="Specify a username used to connect to a remote Hyper-V host.")]
         [string]$Username,
         
-        [Parameter(Mandatory=$False)]
+        [Parameter(ParameterSetName="Auth", Mandatory=$False, HelpMessage="Specify a password for authentication with the specified username.")]
         [string]$Password,
         
-        [Parameter(Mandatory=$False)]
+        [Parameter(ParameterSetName="Cim", Mandatory=$False)]
         [Microsoft.Management.Infrastructure.CimSession]$CimSession        
     )
     
     BEGIN {
+        
+        # If username/password passed to function, create a CIM session to authenticate to remote host
         If ($PSBoundParameters['Username']) {
                 If ($PSBoundParameters['Password']) {
+                    
+                    # Convert a string to a secure string and create a credential object
                     $SecurePassword = ConvertTo-SecureString -String $Password -AsPlainText -Force
                     $cred = New-Object -typename System.Management.Automation.PSCredential -argumentlist $Username, $SecurePassword
-                    $cim = New-CimSession -Credential $cred -ComputerName $ComputerName
+                    
+                    # Try a connection to the remote host before creating the CIM session
+                    Try {
+                        Test-Connection -ComputerName $ComputerName -Count 1 -ErrorVariable TestError -ErrorAction Stop
+                    }
+                    Catch {
+                        Write-Error "Failed to connect with error: " $TestError
+                        Return
+                    }
+                    
+                    Try {
+                        $cim = New-CimSession -Credential $cred -ComputerName $ComputerName -ErrorVariable CimError -ErrorAction Stop    
+                    }
+                    Catch {
+                        Write-Error "Failed to to create CIM session with: " $CimError
+                        Return
+                    }
+                    
                 }
         }
 
+        # If a CIM session passed just use that. (no need to pass one CIM session into another, though)
         If ($PSBoundParameters['CimSession']) {
             $cim = $CimSession
         }
     }
         
     PROCESS {
+        
+        # Walk through each VM and remove it along with its virtual hard disks
+        # Need to fix Invoke-Command 
         ForEach ( $v in $VM ) {
-            $machine = Get-VM -CimSession $cim -Name $v -ErrorVariable $Error
+            $machine = Get-VM -CimSession $cim -Name $v -ErrorVariable Error -ErrorAction SilentlyContinue
             $VHDs = $machine | Get-VMHardDiskDrive
-            Invoke-Command -ComputerName $ComputerName -ScriptBlock { param($VHDs) ForEach ( $vhd in $VHDs) { Remove-Item -Path $vhd.Path -Force -Confirm:$False -Verbose } } -Args $VHDs
+            Invoke-Command -ComputerName $ComputerName -Credential $cred -ScriptBlock { param($VHDs) ForEach ( $vhd in $VHDs) { Remove-Item -Path $vhd.Path -Force -Confirm:$False -Verbose } } -Args $VHDs
 			$machine | Remove-VM -Force -Verbose
         }
     }
