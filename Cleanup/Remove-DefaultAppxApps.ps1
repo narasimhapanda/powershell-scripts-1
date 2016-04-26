@@ -117,4 +117,5 @@ Function Remove-DefaultAppxApps {
 "Contact Support","Windows.ContactSupport_cw5n1h2txyewy"
 "Twitter","9E2F88E3.Twitter_wgeqdkkx372wm"
 "Candy Crush Soda Saga","king.com.CandyCrushSodaSaga_kgqvnymyfvs32"
+"Test Taker", Microsoft.Windows.SecureAssessmentBrowser_cw5n1h2txyewy
 #>

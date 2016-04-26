@@ -1,6 +1,6 @@
 # Authenticate to the remote host (CredSSP already configured for workgroup machines)
 $Username = "Administrator"
-$Password = "Passw0rd"
+$Password = "password"
 $SPassword = convertto-securestring -String $Password -AsPlainText -Force
 $cred = new-object -typename System.Management.Automation.PSCredential -argumentlist $Username, $SPassword
 # $cred = Get-Credential -UserName Administrator -Message "Please enter the password."
@@ -32,6 +32,8 @@ Smart Paging File
 # Set all DVD drives on a VM to 'None'
 Get-VMDvdDrive -CimSession $nuc1 -VMName DC1 | ForEach { Set-VMDvdDrive -VMDvdDrive $_ -Path $Null }
 
-# Move all VMs where XML configuration is stored in specific location to new location
+# Move all VMs where XML configuration is stored in specific location to new location, on a remote Hyper-V host.
 Get-VM -CimSession $nuc1 | Where-Object { $_.ConfigurationLocation -eq "D:\Hyper-V\Machines" } | Move-VMStorage -VirtualMachinePath D:\Hyper-V -Verbose
 
+# Set Checkpoints and Smart Paging locations on all VMs except for DC1 on a remote Hyper-V host.
+Get-VM -CimSession $nuc1 | Where-Object { $_.Name -ne "DC1" } | Set-VM -SnapshotFileLocation "D:\Hyper-V" -SmartPagingFilePath "C:\Hyper-V" -Verbose
